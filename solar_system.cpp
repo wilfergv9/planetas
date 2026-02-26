@@ -156,6 +156,10 @@ int main(int argc, char** argv)
     int SAMPLE_EVERY = 1;
     int step = 0;
 
+    // performance measurement
+    double sim_start = omp_get_wtime();
+    double max_speed = 0.0;
+
     std::cout << "Iniciando simulación..." << std::endl;
 
     while (t < t_end)
@@ -192,6 +196,14 @@ int main(int argc, char** argv)
             orbital_entities[m1_idx].e[3] += a_g.e[0] * dt;
             orbital_entities[m1_idx].e[4] += a_g.e[1] * dt;
             orbital_entities[m1_idx].e[5] += a_g.e[2] * dt;
+
+            // compute speed magnitude
+            double vx = orbital_entities[m1_idx].e[3];
+            double vy = orbital_entities[m1_idx].e[4];
+            double vz = orbital_entities[m1_idx].e[5];
+            double speed = sqrt(vx*vx + vy*vy + vz*vz);
+            #pragma omp critical
+            if (speed > max_speed) max_speed = speed;
         }
 
         // Actualizar posiciones en paralelo
@@ -219,8 +231,12 @@ int main(int argc, char** argv)
     }
 
     csv_file.close();
+    double sim_end = omp_get_wtime();
+    double elapsed = sim_end - sim_start;
     std::cout << "Simulación completa. Datos exportados a orbits.csv" << std::endl;
     std::cout << "Pasos totales: " << step << std::endl;
+    std::cout << "Tiempo transcurrido: " << elapsed << " s (" << (step/elapsed) << " pasos/s)" << std::endl;
+    std::cout << "Velocidad máxima registrada: " << max_speed << " m/s" << std::endl;
 
     free(orbital_entities);
     return 0;
