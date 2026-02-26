@@ -4,6 +4,7 @@
 #include <math.h>
 #include <random>
 #include <vector>
+#include <omp.h>  // OpenMP for parallelization
 
 struct Vector3
 {
@@ -100,6 +101,17 @@ int main(int argc, char** argv)
     }
     double t_end = 86400 * 365 * years;   // años en segundos
 
+    // OpenMP thread info
+    #pragma omp parallel
+    {
+        int tid = omp_get_thread_num();
+        int nthreads = omp_get_num_threads();
+        if (tid == 0) {
+            std::cout << "OpenMP: usando " << nthreads << " threads\n";
+        }
+        std::cout << "  hilo " << tid << " inicializado\n";
+    }
+
     // -------------------------------------------------------
     // EXPORTACIÓN A CSV
     // Cada fila: tiempo, x0,y0,z0, x1,y1,z1, ... x8,y8,z8
@@ -149,11 +161,13 @@ int main(int argc, char** argv)
     while (t < t_end)
     {
         // Calcular aceleraciones y actualizar velocidades
-        for (size_t m1_idx = 0; m1_idx < N_BODIES; m1_idx++)
+        // calcular aceleraciones en paralelo por cuerpo
+        #pragma omp parallel for schedule(dynamic)
+        for (int m1_idx = 0; m1_idx < N_BODIES; m1_idx++)
         {
             Vector3 a_g = { 0,0,0 };
 
-            for (size_t m2_idx = 0; m2_idx < N_BODIES; m2_idx++)
+            for (int m2_idx = 0; m2_idx < N_BODIES; m2_idx++)
             {
                 if (m1_idx != m2_idx)
                 {
@@ -180,8 +194,9 @@ int main(int argc, char** argv)
             orbital_entities[m1_idx].e[5] += a_g.e[2] * dt;
         }
 
-        // Actualizar posiciones
-        for (size_t entity_idx = 0; entity_idx < N_BODIES; entity_idx++)
+        // Actualizar posiciones en paralelo
+        #pragma omp parallel for schedule(static)
+        for (int entity_idx = 0; entity_idx < N_BODIES; entity_idx++)
         {
             orbital_entities[entity_idx].e[0] += orbital_entities[entity_idx].e[3] * dt;
             orbital_entities[entity_idx].e[1] += orbital_entities[entity_idx].e[4] * dt;
