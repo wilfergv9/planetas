@@ -48,9 +48,14 @@ else:
 N_FRAMES = len(df_anim)
 
 # Convertir posiciones a AU para todos los cuerpos detectados
+# hacemos columnas en bloque para evitar fragmentación
+newcols = {}
 for name in body_names:
-    df_anim[f"{name}_x_au"] = df_anim[f"{name}_x"] / AU
-    df_anim[f"{name}_y_au"] = df_anim[f"{name}_y"] / AU
+    newcols[f"{name}_x_au"] = df_anim[f"{name}_x"] / AU
+    newcols[f"{name}_y_au"] = df_anim[f"{name}_y"] / AU
+# agregar al dataframe en un solo paso
+for k, v in newcols.items():
+    df_anim[k] = v
 
 # Figura y ejes
 fig = plt.figure(figsize=(16, 8), facecolor="#0A0A1A")
