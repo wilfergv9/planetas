@@ -39,7 +39,7 @@ struct OrbitalEntity
     }
 };
 
-int main()
+int main(int argc, char** argv)
 {
     OrbitalEntity* orbital_entities;
     // Número objetivo de cuerpos (incluye el Sol y los 8 planetas)
@@ -88,7 +88,17 @@ int main()
     double t_0 = 0;
     double t = t_0;
     double dt = 86400;                  // 1 día en segundos
-    double t_end = 86400 * 365 * 10;   // 10 años en segundos
+
+    // permitir especificar años de simulación en la línea de comandos
+    double years = 10.0;
+    if (argc > 1) {
+        try {
+            years = std::stod(argv[1]);
+        } catch (...) {
+            std::cerr << "Argument must be number of years; using default 10" << std::endl;
+        }
+    }
+    double t_end = 86400 * 365 * years;   // años en segundos
 
     // -------------------------------------------------------
     // EXPORTACIÓN A CSV
