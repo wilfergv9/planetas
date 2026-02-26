@@ -1,0 +1,18 @@
+# Compilación C++
+*.o
+*.exe
+*.out
+/build/
+bin/
+obj/
+
+# Visual Studio Code
+.vscode/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Archivos del sistema
+.DS_Store
