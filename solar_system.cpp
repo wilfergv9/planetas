@@ -2,6 +2,7 @@
 #include <fstream>
 #include <string>
 #include <math.h>
+#include <random>
 #include <vector>
 
 struct Vector3
@@ -41,10 +42,12 @@ struct OrbitalEntity
 int main()
 {
     OrbitalEntity* orbital_entities;
-    int N_ASTEROIDS = 0;
+    // Número objetivo de cuerpos (incluye el Sol y los 8 planetas)
+    int N_ASTEROIDS = 491; // 500 total - 9 existentes = 491
     int N_BODIES = 9 + N_ASTEROIDS;
     orbital_entities = (OrbitalEntity*)malloc(sizeof(OrbitalEntity) * N_BODIES);
 
+    // Inicializar el Sol y los planetas conocidos
     orbital_entities[0] = { 0.0,0.0,0.0,        0.0,0.0,0.0,        1.989e30 };       // Sol
     orbital_entities[1] = { 57.909e9,0.0,0.0,   0.0,47.36e3,0.0,    0.33011e24 };     // Mercurio
     orbital_entities[2] = { 108.209e9,0.0,0.0,  0.0,35.02e3,0.0,    4.8675e24 };      // Venus
@@ -55,11 +58,37 @@ int main()
     orbital_entities[7] = { 2872.463e9,0.0,0.0, 0.0,6.80e3,0.0,     86.813e24 };      // Urano
     orbital_entities[8] = { 4495.060e9,0.0,0.0, 0.0,5.43e3,0.0,     102.413e24 };     // Neptuno
 
+    // Constante gravitacional y distribución aleatoria para asteroides
+    double BIG_G = 6.67e-11;
+    std::mt19937_64 rng(42);
+    std::uniform_real_distribution<double> dist_a(0.3 * 1.49596e11, 50.0 * 1.49596e11); // semi-ejes en m (0.3-50 AU)
+    std::uniform_real_distribution<double> dist_theta(0.0, 2.0 * M_PI);
+    std::uniform_real_distribution<double> dist_inc(-0.2, 0.2); // inclinación en radianes
+    std::uniform_real_distribution<double> dist_mass(1e12, 1e20); // masas pequeñas
+
+    for (int idx = 9; idx < N_BODIES; idx++) {
+        double a = dist_a(rng);
+        double theta = dist_theta(rng);
+        double inc = dist_inc(rng);
+
+        double x = a * cos(theta);
+        double y = a * sin(theta) * cos(inc);
+        double z = a * sin(theta) * sin(inc);
+
+        // Velocidad circular aproximada alrededor del Sol
+        double v = sqrt(BIG_G * orbital_entities[0].e[6] / a);
+        double vx = -v * sin(theta);
+        double vy = v * cos(theta) * cos(inc);
+        double vz = v * cos(theta) * sin(inc);
+
+        double mass = dist_mass(rng);
+        orbital_entities[idx] = { x, y, z, vx, vy, vz, mass };
+    }
+
     double t_0 = 0;
     double t = t_0;
     double dt = 86400;                  // 1 día en segundos
     double t_end = 86400 * 365 * 10;   // 10 años en segundos
-    double BIG_G = 6.67e-11;
 
     // -------------------------------------------------------
     // EXPORTACIÓN A CSV
@@ -70,7 +99,25 @@ int main()
 
     // Encabezado del CSV
     csv_file << "t";
-    std::string names[] = {"Sol","Mercurio","Venus","Tierra","Marte","Jupiter","Saturno","Urano","Neptuno"};
+    std::vector<std::string> names;
+    names.push_back("Sol");
+    names.push_back("Mercurio");
+    names.push_back("Venus");
+    names.push_back("Tierra");
+    names.push_back("Marte");
+    names.push_back("Jupiter");
+    names.push_back("Saturno");
+    names.push_back("Urano");
+    names.push_back("Neptuno");
+
+    // Generar nombres para los cuerpos añadidos (asteroides/satélites)
+    for (int i = 9; i < N_BODIES; i++) {
+        // Nombre tipo Asteroid001 ...
+        char buf[32];
+        snprintf(buf, sizeof(buf), "Asteroid%03d", i - 8);
+        names.push_back(std::string(buf));
+    }
+
     for (int i = 0; i < N_BODIES; i++)
         csv_file << "," << names[i] << "_x," << names[i] << "_y," << names[i] << "_z";
     csv_file << "\n";
