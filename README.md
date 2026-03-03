@@ -20,4 +20,4 @@ Archivos principales:
 - `visualizar_orbitas.py`
 - `orbits.csv`
 
-Licence: sin especificar
+Licence: sin especificar.
